@@ -4,7 +4,7 @@
 // @version      0.1
 // @description  Download button for pixiv.
 // @author       Skarlit
-// @match        http://www.pixiv.net/member_illust.php?mode=medium&illust_id=*
+// @match        http://www.pixiv.net/member_illust.php?*
 // @grant        none
 // ==/UserScript==
 
