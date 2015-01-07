@@ -25,7 +25,7 @@ class Downloader
     else
       file_path = "cache/home.cache"
     end
-    return Nokogiri::HTML(File.read(file_path))
+    return Nokogiri::HTML(File.open(file_path))
   end
 
   def cleanup
@@ -36,35 +36,56 @@ class Downloader
 end
 
 class Parser
-  attr_accessor :downloader, :homePage
-  def initialize(cache=false)
+  attr_accessor :downloader, :homepage, :doc
+  def initialize(cache=false, id=nil)
     @downloader = Downloader.new
     if cache
-      @homePage = @downloader.load_cache
+      @homepage = @downloader.load_cache(id)
     else
-      @homePage = @downloader.cache
+      @homepage = @downloader.cache
     end
   end
 
   def extractAdventureLinks
     @adventure_links ||= []
-    @homePage.css("a").each do |link|
+    puts @homepage
+    @homepage.css("a").each do |link|
       @adventure_links.push(link["href"]) if link["href"] && link["href"].match(/^\/adventures\/\d+/)
     end
-    puts 'Links Found: '
-    puts @adventure_links
-    puts 'Saving to adventure_links.json'
-    Dir.mkdir('data') if !Dir.exists?('data') 
-    File.open('data/adventure_links.json', 'w') do |f|
-      f.write(@adventure_links.to_json)
+    if !@adventure_links.empty?
+      puts 'Links Found: '
+      puts @adventure_links
+      puts 'Saving to adventure_links.json'
+      Dir.mkdir('data') if !Dir.exists?('data') 
+      File.open('data/adventure_links.json', 'w') do |f|
+        f.write({'adventure_links'=> @adventure_links}.to_json)
+      end
     end
+  end
+
+  def cacheAll
+    @adventure_links.each do |href|
+      puts "fetching #{href}..."
+      @downloader.cache(href)
+      sleep(1)
+    end
+  end
+
+  def parseAdventurePage(filepath)
+    doc_data = {}
+    @doc = Nokogiri::HTML(File.read(filepath))
+    doc_data['trav-top'] = {
+      'title' => @doc.css('.trav-section-title.primary')[0].text
+    } 
   end
 end
 
 
 def Runner
-  p = Parser.new
+  p = Parser.new(true)
   p.extractAdventureLinks
+  p.cacheAll
 end
+
 
 Runner()
